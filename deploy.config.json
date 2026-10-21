@@ -1,0 +1,7 @@
+{
+  "target": "workers",
+  "workerName": "weathered-pond-a9f6",
+  "projectName": "snk-demo",
+  "branch": "main",
+  "note": "target 决定 tools/deploy.ps1 走哪条路：workers = Cloudflare Worker 静态资源（当前线上就是这种，名字是 workerName）；pages = Cloudflare Pages 直传项目（用 projectName / branch）"
+}

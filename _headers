@@ -1,0 +1,26 @@
+# Cloudflare Pages 响应头
+# 说明：本项目的文件名没有内容哈希，所以 html/css/js 一律交给浏览器每次回源校验，
+# 避免更新后甲方看到的还是旧样式；图片可以短缓存。
+
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(), microphone=(), camera=()
+
+/
+  Cache-Control: public, max-age=0, must-revalidate
+
+/index.html
+  Cache-Control: public, max-age=0, must-revalidate
+
+/*.css
+  Cache-Control: public, max-age=0, must-revalidate
+
+/*.js
+  Cache-Control: public, max-age=0, must-revalidate
+
+/_version.txt
+  Cache-Control: no-store
+
+/assets/*
+  Cache-Control: public, max-age=3600

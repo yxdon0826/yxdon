@@ -1,0 +1,79 @@
+{
+  "name": "snk-demo-b",
+  "title": "S N K — 全监控领域（入口叙事 Demo）",
+  "version": "1.0.0",
+  "type": "static-site",
+  "entry": "index.html",
+  "language": ["zh-CN"],
+  "runtime": {
+    "frameworks": [],
+    "dependencies": [],
+    "build": null,
+    "needsServer": false,
+    "note": "零依赖纯静态；file:// 可直接打开，也可用任意静态服务器"
+  },
+  "serve": {
+    "script": "serve.cmd",
+    "command": "python -m http.server 8421",
+    "url": "http://127.0.0.1:8421/"
+  },
+  "docs": {
+    "readme": "README.md",
+    "agents": "AGENTS.md",
+    "features": "STRUCTURE.md"
+  },
+  "screens": [
+    { "id": "screenIntro", "name": "开场·能量灌注", "file": "index.html", "logic": "app.js" },
+    { "id": "screenDialog", "name": "分支对话", "file": "index.html", "logic": "app.js" },
+    { "id": "screenBlood", "name": "血液 / DNA", "file": "index.html", "logic": "app.js" },
+    { "id": "screenRegister", "name": "注册", "file": "index.html", "logic": "app.js" },
+    { "id": "screenLogin", "name": "登录", "file": "index.html", "logic": "app.js" },
+    { "id": "screenConsole", "name": "控制台", "file": "index.html", "logic": "app.js" },
+    { "id": "bsod", "name": "蓝屏彩蛋", "file": "index.html", "logic": "app.js" }
+  ],
+  "features": {
+    "reveal": { "desc": "按住左键灌注能量，扫过处常亮；覆盖率 72% 触发充能", "where": "app.js:intro/energyPaint/surge" },
+    "branch": { "desc": "四步分支问答，含「退出」三击变红与「否」二次消失", "where": "app.js:STEPS/onQuit/onNope" },
+    "blood": { "desc": "点击落血，涟漪+飞溅+血迹", "where": "app.js:bloodFrame" },
+    "dna": { "desc": "进度条 0→100% 后进注册", "where": "app.js:runScan" },
+    "auth": { "desc": "注册 / 登录（仅前端判空，未接校验）", "where": "app.js:registerForm/loginForm" },
+    "console": { "desc": "问候四句轮换 + 购买/查询 + 指标日志", "where": "app.js:enterConsole/nextQuestion" },
+    "bsod": { "desc": "蓝屏时序：锁定 → 频闪 → 锁定您的位置中 → 坐标滚动锁定", "where": "app.js:triggerBsod/startCoord" }
+  },
+  "data": {
+    "accounts": "data/accounts.json",
+    "note": "测试账号；密码为明文，仅本地演示用"
+  },
+  "assets": {
+    "logo": "assets/logo.png",
+    "logoMobile": "assets/logo-640.png",
+    "icon": "assets/icon.png",
+    "favicon": "assets/favicon.png",
+    "originals": "source/"
+  },
+  "checks": [
+    { "script": "tools/flow.js", "desc": "全流程 + 截图，输出末尾 ERRORS 必须为 none", "needs": ["node", "chrome --remote-debugging-port=9222"] },
+    { "script": "tools/intro-shots.js", "desc": "开场四态截图" },
+    { "script": "tools/mobile.js", "desc": "390×844 触屏流程" },
+    { "script": "tools/perf.js", "desc": "开场帧率：avg≈16.6ms、p95≤16.8、0 帧>20ms" }
+  ],
+  "conventions": [
+    "不引入框架/构建/npm 依赖，保持 file:// 可运行",
+    "<<词>> 是红色高亮语法，勿改",
+    "改完跑 tools/flow.js，ERRORS 必须 none"
+  ],
+  "limits": [
+    "登录不校验",
+    "控制台为占位数据",
+    "蓝屏坐标为随机演示数据",
+    "桌面开关仅绑定 127.0.0.1"
+  ],
+  "optional": {
+    "desktopLauncher": {
+      "path": "tools/preview-app/",
+      "platform": "Windows",
+      "requires": ["Python 3 + tkinter", "PyInstaller（仅打包时需要）"],
+      "distIncluded": false
+    }
+  }
+}

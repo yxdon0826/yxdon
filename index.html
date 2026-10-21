@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#04070c">
+<title>S N K — 全监控领域</title>
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="preload" as="image" href="assets/logo.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- 氛围层 -->
+<div class="grid-bg" aria-hidden="true"></div>
+<div class="scanlines" aria-hidden="true"></div>
+<div class="vignette" aria-hidden="true"></div>
+<div class="hud-corners" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+
+<!-- ============ 1. 开场：鼠标当灯光 ============ -->
+<section class="screen screen--intro is-active" id="screenIntro">
+  <div class="rotator" aria-hidden="true">
+    <img src="assets/icon.png" alt="" draggable="false">
+  </div>
+
+  <div class="logo-stage" id="logoStage">
+    <img class="logo-base" id="logoBase" src="assets/logo.png" alt="S N K" draggable="false">
+  </div>
+
+  <!-- 能量画布放在舞台外面：舞台有 will-change，会让 fixed 子元素以它为包含块 -->
+  <canvas class="logo-energy" id="logoEnergy" aria-label="按住左键灌注能量，点亮徽章"></canvas>
+
+  <p class="intro-hint" id="introHint">按住左键 · 用光照亮徽章</p>
+  <button class="enter-hint" id="enterHint" type="button">点击进入</button>
+  <canvas class="fx" id="fxIntro" aria-hidden="true"></canvas>
+</section>
+
+<!-- ============ 2. 对话分支 ============ -->
+<section class="screen screen--dialog" id="screenDialog">
+  <div class="term-bar">
+    <span>S N K // SECURE TERMINAL</span>
+    <span id="termClock">--:--:--</span>
+  </div>
+
+  <div class="dialog" id="dialogBox">
+    <p class="dl-kicker" id="dlKicker">SYS // INTRUSION-CHECK</p>
+    <p class="dl-text" id="dlText"></p>
+    <div class="dl-choices" id="dlChoices"></div>
+  </div>
+
+  <p class="term-foot">CH-01 · 全监控领域 · ENCRYPTED</p>
+</section>
+
+<!-- ============ 3. 血液 ============ -->
+<section class="screen screen--blood" id="screenBlood">
+  <div class="blood-head">
+    <p class="blood-prompt">请将<span class="hl">血液</span>滴入</p>
+    <p class="blood-hint" id="bloodHint">在黑暗中落下</p>
+  </div>
+  <canvas class="blood-canvas" id="bloodCanvas"></canvas>
+
+  <div class="scan" id="scan">
+    <p class="scan-title">DNA 计入中</p>
+    <div class="scan-bar"><i id="scanFill"></i></div>
+    <p class="scan-meta"><span id="scanPct">0%</span><span id="scanCode">SAMPLE ——— 待检</span></p>
+  </div>
+</section>
+
+<!-- ============ 4. 身份登记 ============ -->
+<section class="screen screen--auth" id="screenRegister">
+  <div class="auth">
+    <header class="auth-bar">
+      <p class="auth-bar__l"><span class="diamond"></span>SNAKE NEST <i>/</i> 蛇宿</p>
+      <p class="auth-bar__c">SECURE CHANNEL <i>·</i> 07</p>
+      <p class="auth-bar__r"><span class="chip-enc">已加密</span><span class="js-clock">--:--:--</span></p>
+    </header>
+
+    <div class="auth-main">
+      <div class="auth-hero">
+        <p class="hero-kick">— SNAKE NEST · INTERNAL AI —</p>
+        <p class="hero-mark" aria-hidden="true">SNK</p>
+        <h1 class="hero-name">蛇宿 · 战术智能终端</h1>
+        <p class="hero-desc">为蛇宿处理情报、战术与麻烦的 AI 助手。<br>它不太热情，但足够可靠。</p>
+
+        <dl class="hero-stats">
+          <div><dt>状态</dt><dd>在线</dd></div>
+          <div><dt>权限</dt><dd>待验证</dd></div>
+          <div><dt>版本</dt><dd>v3.1</dd></div>
+        </dl>
+        <p class="hero-dev"><span>开发者</span>方渊</p>
+
+        <div class="hero-signal" aria-hidden="true">
+          <span class="sig-label">SIGNAL</span>
+          <div class="sig-bars">
+            <i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+            <i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+          </div>
+          <span class="sig-val">98.7%</span>
+        </div>
+      </div>
+
+      <form class="auth-card" id="registerForm" novalidate>
+        <div class="card-head">
+          <span class="card-kicker">AGENT INTAKE</span>
+          <span class="card-chip">FORM-07</span>
+        </div>
+        <h2 class="card-title">身份登记</h2>
+        <p class="card-sub">填写档案，接入蛇宿安全信道。档案仅保存在本机浏览器。</p>
+
+        <label class="fld">
+          <span class="fld__label">姓名 <em>NAME</em></span>
+          <input name="name" type="text" placeholder="输入你的姓名" autocomplete="off" spellcheck="false" maxlength="24">
+        </label>
+
+        <div class="fld-row">
+          <label class="fld">
+            <span class="fld__label">年龄 <em>AGE</em></span>
+            <input name="age" type="text" inputmode="numeric" placeholder="—" maxlength="3" autocomplete="off">
+          </label>
+          <div class="fld">
+            <span class="fld__label">性别 <em>SEX</em></span>
+            <div class="seg" role="group" aria-label="性别">
+              <button class="seg__btn is-on" type="button" data-sex="男">男</button>
+              <button class="seg__btn" type="button" data-sex="女">女</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="fld-row">
+          <label class="fld fld--unit">
+            <span class="fld__label">身高 <em>HEIGHT</em></span>
+            <input name="height" type="text" inputmode="numeric" placeholder="—" maxlength="3" autocomplete="off">
+            <b class="unit">cm</b>
+          </label>
+          <label class="fld fld--unit">
+            <span class="fld__label">体重 <em>WEIGHT</em></span>
+            <input name="weight" type="text" inputmode="numeric" placeholder="—" maxlength="3" autocomplete="off">
+            <b class="unit">kg</b>
+          </label>
+        </div>
+
+        <button class="btn-auth" type="submit">验证身份 <span class="btn-auth__arrow">→</span></button>
+        <p class="card-foot">加密通道直连本机 · 档案仅保存在本地</p>
+        <p class="form-note" id="registerNote"></p>
+      </form>
+    </div>
+
+    <footer class="auth-foot">
+      <span>SNAKE NEST / INTERNAL NETWORK</span>
+      <span class="js-sys">ALL SYSTEMS NORMAL</span>
+    </footer>
+  </div>
+</section>
+
+<!-- ============ 5. 特工认证 ============ -->
+<section class="screen screen--auth" id="screenLogin">
+  <div class="auth">
+    <header class="auth-bar">
+      <p class="auth-bar__l"><span class="diamond"></span>SNAKE NEST <i>/</i> 蛇宿</p>
+      <p class="auth-bar__c">SECURE CHANNEL <i>·</i> 07</p>
+      <p class="auth-bar__r"><span class="chip-enc">已加密</span><span class="js-clock">--:--:--</span></p>
+    </header>
+
+    <div class="auth-main">
+      <div class="auth-hero">
+        <p class="hero-kick">— SNAKE NEST · INTERNAL AI —</p>
+        <p class="hero-mark" aria-hidden="true">SNK</p>
+        <h1 class="hero-name">蛇宿 · 战术智能终端</h1>
+        <p class="hero-desc">为蛇宿处理情报、战术与麻烦的 AI 助手。<br>它不太热情，但足够可靠。</p>
+
+        <dl class="hero-stats">
+          <div><dt>状态</dt><dd>在线</dd></div>
+          <div><dt>权限</dt><dd>待验证</dd></div>
+          <div><dt>版本</dt><dd>v3.1</dd></div>
+        </dl>
+        <p class="hero-dev"><span>开发者</span>方渊</p>
+
+        <div class="hero-signal" aria-hidden="true">
+          <span class="sig-label">SIGNAL</span>
+          <div class="sig-bars">
+            <i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+            <i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+          </div>
+          <span class="sig-val">98.7%</span>
+        </div>
+      </div>
+
+      <form class="auth-card" id="loginForm" novalidate>
+        <div class="card-head">
+          <span class="card-kicker">AGENT AUTHENTICATION</span>
+          <span class="card-chip">ACT-07</span>
+        </div>
+        <h2 class="card-title">特工认证</h2>
+        <p class="card-sub" id="loginSub">登记代号与所属部门，接入蛇宿安全信道。</p>
+
+        <label class="fld">
+          <span class="fld__label">姓名 <em>NAME</em></span>
+          <input name="name" type="text" placeholder="输入你的姓名" autocomplete="off" spellcheck="false" maxlength="24">
+        </label>
+
+        <div class="fld-row">
+          <label class="fld fld--code">
+            <span class="fld__label">代号 <em>CODENAME</em></span>
+            <span class="code-wrap">
+              <span class="code-pre">SNK</span>
+              <input name="codename" type="text" inputmode="numeric" placeholder="0000" maxlength="4" autocomplete="off">
+            </span>
+          </label>
+          <div class="fld fld--select">
+            <span class="fld__label">部门 <em>DEPARTMENT</em></span>
+            <button class="select" type="button" id="deptBtn" aria-haspopup="listbox" aria-expanded="false">
+              <span class="select__val is-empty" id="deptValue">选择所属部门</span>
+              <svg class="select__chev" viewBox="0 0 12 8" aria-hidden="true"><path d="M1 1.5 6 6.5l5-5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+            </button>
+            <ul class="select__list" id="deptList" role="listbox" hidden>
+              <li role="option" data-v="股东">股东</li>
+              <li role="option" data-v="特工部">特工部</li>
+              <li role="option" data-v="人事部">人事部</li>
+              <li role="option" data-v="情报部">情报部</li>
+              <li role="option" data-v="科研部">科研部</li>
+              <li role="option" data-v="灵外局">灵外局</li>
+              <li role="option" data-v="侦察局">侦察局</li>
+              <li role="option" data-v="海外分部">海外分部</li>
+              <li role="option" data-v="界外界">界外界</li>
+              <li role="option" data-v="医生">医生</li>
+            </ul>
+            <input name="dept" type="hidden" value="">
+          </div>
+        </div>
+
+        <div class="fld-row fld-row--3">
+          <label class="fld fld--unit">
+            <span class="fld__label">年龄 <em>AGE</em></span>
+            <input name="age" type="text" inputmode="numeric" placeholder="—" maxlength="3" autocomplete="off">
+            <b class="unit">AGE</b>
+          </label>
+          <label class="fld fld--unit">
+            <span class="fld__label">身高 <em>HEIGHT</em></span>
+            <input name="height" type="text" inputmode="numeric" placeholder="—" maxlength="3" autocomplete="off">
+            <b class="unit">cm</b>
+          </label>
+          <label class="fld fld--unit">
+            <span class="fld__label">体重 <em>WEIGHT</em></span>
+            <input name="weight" type="text" inputmode="numeric" placeholder="—" maxlength="3" autocomplete="off">
+            <b class="unit">kg</b>
+          </label>
+        </div>
+
+        <button class="btn-auth" type="submit">通过认证 <span class="btn-auth__arrow">→</span></button>
+        <p class="card-foot">加密通道直连本机 · 档案仅保存在本地</p>
+        <p class="form-note" id="loginNote"></p>
+      </form>
+
+    </div>
+
+    <footer class="auth-foot">
+      <span>SNAKE NEST / INTERNAL NETWORK</span>
+      <span class="js-sys">ALL SYSTEMS NORMAL</span>
+    </footer>
+  </div>
+</section>
+
+<!-- ============ 6. 控制台 ============ -->
+<section class="screen screen--console" id="screenConsole">
+  <aside class="side">
+    <div class="side-brand">
+      <img src="assets/logo.png" alt="" draggable="false">
+      <span>S N K</span>
+    </div>
+    <nav class="side-nav" id="sideNav">
+      <button class="nav-item is-active" data-view="buy"><i>01</i>购买</button>
+      <button class="nav-item" data-view="query"><i>02</i>查询</button>
+      <button class="nav-item nav-item--locked" type="button" disabled aria-disabled="true" title="聊天功能开发中">
+        <i>03</i>聊天<em class="nav-tag">未开放</em>
+      </button>
+    </nav>
+    <p class="side-foot">全监控领域 · DEMO</p>
+  </aside>
+
+  <main class="room">
+    <header class="room-head">
+      <p class="room-kicker">AI // 助手</p>
+      <h1 id="greeting">特工，今天过得如何？</h1>
+      <p class="room-meta"><span class="dot"></span>SECURE LINE · <span id="roomName">—</span></p>
+    </header>
+
+    <div class="view is-active" data-view="buy">
+      <div class="view-head">
+        <h2>购买</h2>
+        <p>可用配额 <b>03</b> · 本期开放 2 项</p>
+      </div>
+      <ul class="list">
+        <li class="row">
+          <span class="row-id">SNK-001</span>
+          <span class="row-name">焰纹信标<em>单体 · 夜视级</em></span>
+          <span class="row-state">可申请</span>
+        </li>
+        <li class="row">
+          <span class="row-id">SNK-002</span>
+          <span class="row-name">蛇蜕封蜡<em>耗材 · 密封级</em></span>
+          <span class="row-state">可申请</span>
+        </li>
+      </ul>
+      <div class="stats">
+        <div class="stat"><b>12</b><span>监控节点</span></div>
+        <div class="stat"><b>07</b><span>在线特工</span></div>
+        <div class="stat"><b>02</b><span>待处理</span></div>
+      </div>
+
+      <ul class="log">
+        <li><i>04:12</i>SNK-001 申请已受理</li>
+        <li><i>03:58</i>节点 CN-07 心跳正常</li>
+        <li><i>03:41</i>档案比对完成 · 0 异常</li>
+      </ul>
+
+      <p class="view-note">DEMO // 数据待接入</p>
+    </div>
+
+    <div class="view" data-view="query">
+      <div class="view-head">
+        <h2>查询</h2>
+        <p>按编号或代号检索档案</p>
+      </div>
+      <div class="search">
+        <input type="text" placeholder="输入编号 / 代号" aria-label="查询">
+        <button type="button">检 索</button>
+      </div>
+      <p class="view-note">DEMO // 数据待接入</p>
+    </div>
+  </main>
+
+  <!-- 聊天占位：仅视觉，不可交互 -->
+  <div class="chat-dock" aria-hidden="true">
+    <div class="chat-dock__head"><span class="chat-dock__dot"></span>CHAT<em>未开放</em></div>
+    <p class="chat-dock__body">与总部的加密频道尚未接通。</p>
+    <div class="chat-dock__input"><span>输入消息…</span><button type="button" disabled>发送</button></div>
+  </div>
+</section>
+
+<!-- ============ 蓝屏 ============ -->
+<div class="bsod" id="bsod" aria-hidden="true">
+  <div class="bsod-inner">
+    <p class="bsod-face">:(</p>
+    <p class="bsod-text">SNK已锁定该设备</p>
+    <p class="bsod-sub">收集信息后，我们将会为你重启</p>
+    <div class="bsod-bar"><i></i></div>
+    <p class="bsod-code">STOP CODE: SNAKE_LOCKED</p>
+  </div>
+  <p class="bsod-lock" id="bsodLock">锁定中</p>
+  <p class="bsod-track" id="bsodUpload">已上传总部</p>
+  <p class="bsod-coord" id="bsodCoord"></p>
+  <button class="bsod-reset" id="bsodReset" type="button">SIMULATION // 点击重新开始</button>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

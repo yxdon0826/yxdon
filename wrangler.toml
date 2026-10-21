@@ -1,0 +1,13 @@
+# Cloudflare Worker（静态资源模式）部署配置
+# 用于：tools\deploy.ps1 -Target workers
+#
+# 说明：这个站点是纯静态的，没有 Worker 脚本（没有 main），
+# 只把 .deploy 目录里的文件作为静态资产上传，
+# 更新时由 deploy.ps1 重新生成 .deploy 再 wrangler deploy 覆盖同名 Worker。
+
+name = "weathered-pond-a9f6"
+compatibility_date = "2026-10-21"
+
+[assets]
+directory = "./.deploy"
+not_found_handling = "single-page-application"
