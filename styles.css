@@ -524,7 +524,8 @@ img { display: block; -webkit-user-drag: none; user-select: none; }
   display: flex;
   flex-direction: column;
   padding: clamp(16px, 2.6vh, 28px) clamp(18px, 3.2vw, 44px) clamp(12px, 1.8vh, 18px);
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 /* ---- 上下 HUD 条 ---- */

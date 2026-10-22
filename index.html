@@ -105,11 +105,16 @@
           <span class="card-chip">FORM-07</span>
         </div>
         <h2 class="card-title">身份登记</h2>
-        <p class="card-sub">填写档案，接入蛇宿安全信道。档案仅保存在本机浏览器。</p>
+        <p class="card-sub">填写档案，接入蛇宿安全信道。档案写入蛇宿档案库，密钥不可找回。</p>
 
         <label class="fld">
           <span class="fld__label">姓名 <em>NAME</em></span>
           <input name="name" type="text" placeholder="输入你的姓名" autocomplete="off" spellcheck="false" maxlength="24">
+        </label>
+
+        <label class="fld">
+          <span class="fld__label">密钥 <em>PASSWORD</em></span>
+          <input name="password" type="password" placeholder="至少 4 位，登录时使用" autocomplete="new-password" maxlength="64">
         </label>
 
         <div class="fld-row">
@@ -191,11 +196,16 @@
           <span class="card-chip">ACT-07</span>
         </div>
         <h2 class="card-title">特工认证</h2>
-        <p class="card-sub" id="loginSub">登记代号与所属部门，接入蛇宿安全信道。</p>
+        <p class="card-sub" id="loginSub">输入代号与密钥，接入蛇宿安全信道。</p>
 
         <label class="fld">
           <span class="fld__label">姓名 <em>NAME</em></span>
           <input name="name" type="text" placeholder="输入你的姓名" autocomplete="off" spellcheck="false" maxlength="24">
+        </label>
+
+        <label class="fld">
+          <span class="fld__label">密钥 <em>PASSWORD</em></span>
+          <input name="password" type="password" placeholder="输入密钥" autocomplete="current-password" maxlength="64">
         </label>
 
         <div class="fld-row">

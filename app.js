@@ -31,6 +31,43 @@
     currentScreen = name;
   }
 
+  /* ---------------- 后端接口（Cloudflare Pages Functions） ---------------- */
+
+  // 线上走 /api/*；file:// 或纯静态本地预览没有后端，自动降级成演示模式。
+  const API = { live: false, agent: null };
+
+  async function callApi(path, body, ms = 8000) {
+    const init = { method: body === undefined ? 'GET' : 'POST', credentials: 'same-origin', headers: {} };
+    if (body !== undefined) {
+      init.headers['content-type'] = 'application/json';
+      init.body = JSON.stringify(body);
+    }
+    if (typeof AbortSignal !== 'undefined' && AbortSignal.timeout) init.signal = AbortSignal.timeout(ms);
+
+    const res = await fetch('/api' + path, init);
+    let data = null;
+    try { data = await res.json(); } catch (_) { /* 非 JSON，按失败处理 */ }
+
+    if (!res.ok || !data || data.ok !== true) {
+      const err = new Error((data && (data.message || data.error)) || '连接失败');
+      err.code = data && data.error;
+      err.status = res.status;
+      throw err;
+    }
+    return data;
+  }
+
+  async function probeApi() {
+    if (location.protocol === 'file:') return (API.live = false);
+    try {
+      const d = await callApi('/health', undefined, 3500);
+      API.live = d.db === 'ok';
+    } catch (_) {
+      API.live = false;
+    }
+    return API.live;
+  }
+
   /* ---------------- 画布工具 ---------------- */
 
   function fitCanvas(canvas) {
@@ -640,6 +677,7 @@
     bump(btn);
 
     if (dialog.quitClicks >= 3) {
+      logEvent('exit_triple');
       btn.classList.add('is-danger');
       dialog.kicker.textContent = 'SYS // WARNING · 无法退出';
     }
@@ -970,28 +1008,35 @@
     form.age.value = data.age || '';
     form.height.value = data.height || '';
     form.weight.value = data.weight || '';
+    if (data.codename) form.codename.value = String(data.codename).replace(/^SNK-/, '');
     $('#loginNote').textContent = '';
     $('#loginNote').classList.remove('is-on', 'is-ok');
     $('#loginSub').textContent = '登记代号与所属部门，接入蛇宿安全信道。';
     (form.name.value ? form.codename : form.name).focus({ preventScroll: true });
   }
 
-  $('#registerForm').addEventListener('submit', (e) => {
+  $('#registerForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const form = e.currentTarget;
     const name = form.name.value.trim();
+    const password = form.password.value.trim();
     const note = $('#registerNote');
+    const say = (text, okMode = false) => {
+      note.textContent = text;
+      note.classList.add('is-on');
+      note.classList.toggle('is-ok', okMode);
+    };
 
     if (!name) {
-      note.textContent = '// 档案不完整：姓名不可为空';
-      note.classList.add('is-on');
-      note.classList.remove('is-ok');
+      say('// 档案不完整：姓名不可为空');
       form.name.focus({ preventScroll: true });
       return;
     }
-
-    note.textContent = '// 档案已归档 · 正在跳转认证';
-    note.classList.add('is-on', 'is-ok');
+    if (password.length < 4) {
+      say('// 密钥至少 4 位');
+      form.password.focus({ preventScroll: true });
+      return;
+    }
 
     agent.name = name;
     agent.sex = document.querySelector('#registerForm .seg__btn.is-on')?.dataset.sex || '男';
@@ -999,40 +1044,100 @@
     agent.height = form.height.value.trim();
     agent.weight = form.weight.value.trim();
 
-    setTimeout(() => {
-      go('login');
-      fillLogin(agent);
-    }, 900);
+    if (!API.live) {
+      say('// 档案已归档 · 本地演示模式（未连接后端）', true);
+      setTimeout(() => { go('login'); fillLogin(agent); }, 900);
+      return;
+    }
+
+    say('// 正在写入档案库…');
+    const btn = form.querySelector('.btn-auth');
+    btn.disabled = true;
+    try {
+      const d = await callApi('/register', {
+        name,
+        password,
+        sex: agent.sex,
+        age: agent.age,
+        height: agent.height,
+        weight: agent.weight,
+      });
+      const a = d.agent || {};
+      agent.codename = a.codename || '';
+      agent.dept = a.dept_name || a.dept_code || '';
+      say(`// 档案已归档 · 代号 ${a.codename || '已分配'} · 正在跳转认证`, true);
+      setTimeout(() => { go('login'); fillLogin(agent); }, 1200);
+    } catch (err) {
+      say('// 登记失败：' + (err.message || '未知错误'));
+    } finally {
+      btn.disabled = false;
+    }
   });
 
-  $('#loginForm').addEventListener('submit', (e) => {
+  $('#loginForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const form = e.currentTarget;
     const name = form.name.value.trim();
     const num = form.codename.value.trim();
+    const password = form.password.value.trim();
     const note = $('#loginNote');
+    const say = (text, okMode = false) => {
+      note.textContent = text;
+      note.classList.add('is-on');
+      note.classList.toggle('is-ok', okMode);
+    };
 
     if (!name || !num || !form.dept.value) {
-      note.textContent = '// 认证失败：姓名、代号、部门均不可为空';
-      note.classList.add('is-on');
-      note.classList.remove('is-ok');
+      say('// 认证失败：姓名、代号、部门均不可为空');
       if (!name) form.name.focus({ preventScroll: true });
       else if (!num) form.codename.focus({ preventScroll: true });
       else deptBtn.focus({ preventScroll: true });
       return;
     }
+    if (password.length < 4) {
+      say('// 认证失败：密钥至少 4 位');
+      form.password.focus({ preventScroll: true });
+      return;
+    }
 
-    note.textContent = '// 认证通过 · 正在接入';
-    note.classList.add('is-on', 'is-ok');
-
+    const codename = `SNK-${num.padStart(4, '0')}`;
     agent.name = name;
-    agent.codename = `SNK-${num.padStart(4, '0')}`;
+    agent.codename = codename;
     agent.dept = form.dept.value;
     agent.age = form.age.value.trim();
     agent.height = form.height.value.trim();
     agent.weight = form.weight.value.trim();
 
-    setTimeout(() => enterConsole(agent), 700);
+    if (!API.live) {
+      say('// 认证通过 · 本地演示模式（未连接后端）', true);
+      setTimeout(() => enterConsole(agent), 650);
+      return;
+    }
+
+    say('// 正在校验密钥…');
+    const btn = form.querySelector('.btn-auth');
+    btn.disabled = true;
+    try {
+      const d = await callApi('/login', { codename, password });
+      const a = d.agent || {};
+      API.agent = a;
+      say('// 认证通过 · 正在接入', true);
+      setTimeout(() => {
+        enterConsole({
+          name: a.name || name,
+          codename: a.codename || codename,
+          dept: a.dept_name || a.dept_code || form.dept.value,
+          age: a.age ?? agent.age,
+          height: a.height_cm ?? agent.height,
+          weight: a.weight_kg ?? agent.weight,
+          greeting: d.greeting || '',
+        });
+      }, 700);
+    } catch (err) {
+      say('// ' + (err.message || '认证失败'));
+    } finally {
+      btn.disabled = false;
+    }
   });
 
   /* ============================================================
@@ -1075,7 +1180,7 @@
 
     const ask = document.createElement('span');
     ask.className = 'ask';
-    ask.textContent = nextQuestion();
+    ask.textContent = who && who.greeting ? who.greeting : nextQuestion();
 
     greeting.append(strong, document.createTextNode(' 特工，'), ask);
     $('#roomName').textContent = name;
@@ -1084,6 +1189,106 @@
     if (foot) foot.textContent = dept ? `全监控领域 · ${dept}` : '全监控领域 · DEMO';
 
     go('console');
+    hydrateConsole();
+  }
+
+  /* ---------------- 控制台数据：后端有就换成真数据，没有就保持示例 ---------------- */
+
+  const esc = (s) =>
+    String(s == null ? '' : s).replace(
+      /[&<>"']/g,
+      (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])
+    );
+
+  const EVENT_LABEL = {
+    login: '认证通过',
+    register: '档案归档',
+    logout: '断开会话',
+    blood: '血液采样完成',
+    dna: 'DNA 比对完成',
+    join: '加入申请',
+    buyer: '买家通道',
+    exit_triple: '退出尝试 ×3',
+    bsod: '全监控锁定',
+    visit: '新设备接入',
+    buy: '购买申请',
+  };
+
+  const STATE_LABEL = { open: '可申请', locked: '未解锁', closed: '已售罄', pending: '审核中' };
+
+  function clockOf(ts) {
+    const t = Number(ts);
+    if (!t) return '--:--';
+    const d = new Date(t * 1000);
+    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  }
+
+  async function hydrateConsole() {
+    if (!API.live) return;
+
+    const buyView = document.querySelector('.view[data-view="buy"]');
+    const logList = buyView ? buyView.querySelector('.log') : null;
+    const statBox = buyView ? buyView.querySelector('.stats') : null;
+
+    const [prod, st, lg] = await Promise.allSettled([
+      callApi('/products'),
+      callApi('/stats'),
+      callApi('/logs'),
+    ]);
+
+    if (prod.status === 'fulfilled' && buyView) {
+      const items = prod.value.items || [];
+      if (items.length) {
+        buyView.querySelector('.list').innerHTML = items
+          .map(
+            (p) => `<li class="row">
+          <span class="row-id">${esc(p.code)}</span>
+          <span class="row-name">${esc(p.name)}<em>${esc(p.category || '')}${
+              p.rarity ? ' · ' + esc(p.rarity) : ''
+            }</em></span>
+          <span class="row-state">${esc(STATE_LABEL[p.status] || p.status || '—')}</span>
+        </li>`
+          )
+          .join('');
+        const head = buyView.querySelector('.view-head p');
+        if (head) head.innerHTML = `可用配额 <b>03</b> · 本期开放 ${items.length} 项`;
+      }
+    }
+
+    if (st.status === 'fulfilled' && statBox) {
+      const entries = Object.values(st.value.stats || {}).filter((x) => x && x.label);
+      if (entries.length) {
+        statBox.innerHTML = entries
+          .map(
+            (x) =>
+              `<div class="stat"><b>${esc(String(x.value).padStart(2, '0'))}</b><span>${esc(x.label)}</span></div>`
+          )
+          .join('');
+      }
+    }
+
+    if (lg.status === 'fulfilled' && logList) {
+      const items = (lg.value.items || []).slice(0, 5);
+      if (items.length) {
+        logList.innerHTML = items
+          .map(
+            (l) =>
+              `<li><i>${clockOf(l.created_at)}</i>${esc(EVENT_LABEL[l.event] || l.event)}${
+                l.codename ? ' · ' + esc(l.codename) : ''
+              }</li>`
+          )
+          .join('');
+      }
+    }
+
+    const note = buyView ? buyView.querySelector('.view-note') : null;
+    if (note) note.textContent = 'LIVE // 数据来自档案库';
+  }
+
+  /* 埋点：只在后端可用时上报，失败静默，不影响演示 */
+  function logEvent(name, meta) {
+    if (!API.live) return;
+    callApi('/event', { event: name, meta: meta || null }, 4000).catch(() => {});
   }
 
   $('#sideNav').addEventListener('click', (e) => {
@@ -1099,6 +1304,7 @@
     });
   });
 
+    logEvent('bsod');
   /* ============================================================
      蓝屏
      ============================================================ */
@@ -1177,12 +1383,16 @@
   }
   mountAuthDeco();
 
+  /* 启动即探测后端：连上就走真实登录，连不上自动演示模式 */
+  probeApi();
+
   /* 自检用：只读状态 */
   window.__demo = {
     get screen() { return currentScreen; },
     get reveal() { return intro.progress; },
     get ready() { return intro.ready; },
     get quitClicks() { return dialog.quitClicks; },
+    get live() { return API.live; },
     get nopeGone() { return !document.querySelector('.choice[data-i="02"]'); },
   };
 })();
