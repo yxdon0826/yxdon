@@ -8,11 +8,12 @@
  * 依赖绑定：
  *   env.DB  D1 数据库（wrangler.toml 的 [[d1_databases]]）
  *
- * 密码：PBKDF2-HMAC-SHA256 / 120000 次 / 16 字节盐 / 32 字节输出
+ * 密码：PBKDF2-HMAC-SHA256 / 100000 次 / 16 字节盐 / 32 字节输出（Workers 上限 100000）
  *       存储格式 pbkdf2$<iter>$<salt_b64>$<hash_b64>
  */
 
-const PBKDF2_ITER = 120000;
+const PBKDF2_ITER = 100000;   // Workers 的 PBKDF2 迭代上限就是 100000
+const MAX_PBKDF2_ITER = 100000;  // Cloudflare Workers 硬上限
 const SESSION_TTL = 60 * 60 * 12;        // 12 小时
 const MAX_FAILED = 3;                     // 连续失败 3 次锁号
 const FAIL_WINDOW = 60 * 15;              // 失败统计窗口 15 分钟
@@ -67,12 +68,20 @@ async function hashPassword(password) {
   return `pbkdf2$${PBKDF2_ITER}$${b64(salt)}$${hash}`;
 }
 
+/**
+ * 校验密码。返回：
+ *   true     —— 通过
+ *   false    —— 密码不对
+ *   "legacy" —— 库里的哈希迭代次数超过运行环境上限（Workers 只支持 ≤100000），无法校验，
+ *               调用方应提示用户重新写入哈希（backend/fix-passwords.sql）
+ */
 async function verifyPassword(password, stored) {
   if (!stored || typeof stored !== "string") return false;
   const parts = stored.split("$");
   if (parts.length !== 4 || parts[0] !== "pbkdf2") return false;
   const iter = Number(parts[1]);
   if (!Number.isFinite(iter) || iter < 1000) return false;
+  if (iter > MAX_PBKDF2_ITER) return "legacy";
   const salt = unb64(parts[2]);
   const expect = parts[3];
   const actual = await pbkdf2B64(password, salt, iter);
@@ -256,9 +265,33 @@ async function login(env, req) {
   if (!identifier) return fail(400, "ACCOUNT_REQUIRED", "请填写账号或代号");
   if (!password) return fail(400, "PASSWORD_REQUIRED", "请填写密钥");
 
-  const agent = await env.DB.prepare(`SELECT * FROM agents WHERE account = ? OR codename = ?`)
-    .bind(identifier, identifier)
+  // 代号容错：018 / 0018 / 18 / SNK-018 / SNK-0018 都认，前端补不补零都能登录
+  const bare = identifier.replace(/^SNK[-_]?/i, "").trim();
+  const cands = new Set([identifier, identifier.toUpperCase()]);
+  if (/^\d+$/.test(bare)) {
+    cands.add(`SNK-${bare}`);
+    cands.add(`SNK-${bare.padStart(4, "0")}`);
+    cands.add(bare);
+    cands.add(bare.padStart(4, "0"));
+  }
+  const list = [...cands].slice(0, 6);
+  const marks = list.map(() => "?").join(", ");
+
+  let agent = await env.DB.prepare(
+    `SELECT * FROM agents WHERE account IN (${marks}) OR codename IN (${marks})`
+  )
+    .bind(...list, ...list)
     .first();
+
+  // 兜底：纯数字按「数值」匹配 SNK-###，避免前导零写法（0018）对不上 SNK-018
+  if (!agent && /^\d+$/.test(bare)) {
+    const n = Number(bare);
+    const rows = await env.DB.prepare(`SELECT * FROM agents WHERE codename LIKE 'SNK-%'`).all();
+    agent = (rows.results || []).find((r) => {
+      const m = /^SNK-(\d+)$/.exec(r.codename);
+      return m && Number(m[1]) === n;
+    }) || null;
+  }
 
   const t = now();
   const ip = clientIp(req);
@@ -279,6 +312,9 @@ async function login(env, req) {
   }
 
   const good = await verifyPassword(password, agent.password_hash);
+  if (good === "legacy") {
+    return fail(500, "HASH_LEGACY", "该档案的密码哈希是旧版（迭代次数过高），请在 D1 执行 backend/fix-passwords.sql");
+  }
   if (!good) {
     await env.DB.prepare(`INSERT INTO login_attempts (account, ok, reason, ip) VALUES (?, 0, 'bad_password', ?)`)
       .bind(agent.account, ip)

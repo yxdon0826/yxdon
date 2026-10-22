@@ -48,7 +48,7 @@ CREATE TABLE IF NOT EXISTS agents (
   age           INTEGER          CHECK (age IS NULL OR age BETWEEN 1 AND 120),
   height_cm     INTEGER          CHECK (height_cm IS NULL OR height_cm BETWEEN 50 AND 260),
   weight_kg     INTEGER          CHECK (weight_kg IS NULL OR weight_kg BETWEEN 10 AND 400),
-  password_hash TEXT,                      -- pbkdf2$120000$salt_b64$hash_b64（见 README）
+  password_hash TEXT,                      -- pbkdf2$100000$salt_b64$hash_b64（见 README）
   login_count   INTEGER NOT NULL DEFAULT 0,
   last_login_at INTEGER,
   registered_at INTEGER,
@@ -234,25 +234,25 @@ INSERT OR IGNORE INTO metrics (key, value, label) VALUES
   ('pending_tasks',    2, '待处理');
 
 -- 演示账号
--- 密码均为 pbkdf2$120000$salt$hash（PBKDF2-HMAC-SHA256 / 32 字节）
+-- 密码均为 pbkdf2$100000$salt$hash（PBKDF2-HMAC-SHA256 / 32 字节）
 -- 明文见 backend/README.md 的账号表，仅作演示
 INSERT OR IGNORE INTO agents
   (account, codename, name, dept_code, role, clearance, status, sex, age, height_cm, weight_kg, password_hash, registered_at)
 VALUES
   ('snk_018',   'SNK-018',   '方渊', 'intel',    'agent', 3, 'active',
-   '男', 120, 172, 68, 'pbkdf2$120000$mouw065kWfDvxAdcQF1UNg==$bBFx4U49cHaxXjT+gicBU1uz8dpijY7LWd6Ln/DrdU4=', unixepoch()),
+   '男', 120, 172, 68, 'pbkdf2$100000$lj3W9FQXH098C5D97i+TPg==$SPGkYB+dhbVr/G/zg5kGR7p6wlLhZVyjf9t298BZ9J8=', unixepoch()),
 
   ('snk_root',  'VIPER-000', '沈枭', 'shareholder', 'admin', 5, 'active',
-   '男', 41, 183, 76, 'pbkdf2$120000$sgcuyPSkiEuFD9GgWPA7dA==$mvIG5TEe+QHfsQEYPoz8X9mpDdV/81ycnBpTtgnEGyo=', unixepoch()),
+   '男', 41, 183, 76, 'pbkdf2$100000$OKUWKpqiXH7jvMiQDesMsg==$WXEM6KTNtu8jbL/LP9+bGbjOvTX0uy6VVRkxoguucks=', unixepoch()),
 
   ('buyer_01',  'BUYER-001', '周砚', 'overseas', 'buyer', 1, 'active',
-   '女', 29, 168, 50, 'pbkdf2$120000$zS8PSduyRvRUGT4qkEUnNw==$Z8OggSgF4k5wB77u1DghpdA7s/BA24LpTeOiGRzKXqs=', unixepoch()),
+   '女', 29, 168, 50, 'pbkdf2$100000$KOKXik6I8sArvTm4OBcWmw==$5TVcZf5cizrdn7SIVf/MDmpRSq106KrzKdNtu9aQFs4=', unixepoch()),
 
   ('locked_01', 'GHOST-404', '无名', 'recon',    'agent', 0, 'locked',
-   '未公开', 33, 175, 62, 'pbkdf2$120000$Gl9p7gH2VkaT/hyySpivZg==$zM6Oe/rT5ADPu/r6xiJkOP1CPy76frNO7rQSo0DHYwM=', unixepoch()),
+   '未公开', 33, 175, 62, 'pbkdf2$100000$45YoMmKaHPJ+ikyKMy6M2g==$fATPPJj+2fwW7QyH2Drd0Ej+eOfInGlIjk0mCiTcQDk=', unixepoch()),
 
   ('guest',     'GUEST',     '访客', 'hr',       'guest', 0, 'expired',
-   '未公开', 20, 170, 55, 'pbkdf2$120000$gdNPzQv88GH9XGfDTusvNw==$6xkG013Wh+ECS59raUYF6J3Sl1hq+T/T/4O5/MnIWWw=', unixepoch());
+   '未公开', 20, 170, 55, 'pbkdf2$100000$dJw494qgINkHBSoaZVMp1A==$aV0kGkJbwEG2Shwzc+rYQIwxj6+lfJKLJ52O/foSTKQ=', unixepoch());
 
 -- 三条控制台日志
 INSERT OR IGNORE INTO logs (agent_id, event, level, meta, created_at) VALUES

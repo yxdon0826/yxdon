@@ -65,7 +65,7 @@ npx wrangler@4 d1 execute snk-db --remote --file=./backend/schema.sql
 | `locked_01` | `locked` | GHOST-404 | 无名 | 侦察局 | agent | **locked**（测锁定提示） |
 | `guest` | `guest` | GUEST | 访客 | 人事部 | guest | **expired**（测过期提示） |
 
-密码在库里存成 `pbkdf2$120000$<salt_b64>$<hash_b64>`（PBKDF2-HMAC-SHA256，32 字节，盐 16 字节）。
+密码在库里存成 `pbkdf2$100000$<salt_b64>$<hash_b64>`（PBKDF2-HMAC-SHA256，32 字节，盐 16 字节）。
 Worker 里用 Web Crypto 的 `PBKDF2` 校验即可，不依赖任何库；注册时同样格式写入。
 
 ## 四、几个设计取舍（说明白，免得以后觉得奇怪）
