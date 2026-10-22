@@ -1100,7 +1100,8 @@
       return;
     }
 
-    const codename = `SNK-${num.padStart(4, '0')}`;
+    // 不补零：0000 处的 018 要能对得上种子账号 SNK-018（注册生成的四位号不受影响）
+    const codename = `SNK-${num}`;
     agent.name = name;
     agent.codename = codename;
     agent.dept = form.dept.value;
